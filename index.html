@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Meal Counter" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="description" content="Discreet one-handed meal tap counter for tracking shared foods by piece or gram steps." />
+  <title>Meal Counter</title>
+
+  <!-- Inline SVG App Icon & PWA Manifest for Add-to-Home-Screen -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%230a0a0c'/%3E%3Crect x='10' y='10' width='108' height='108' rx='22' fill='%2314161b' stroke='%23272b35' stroke-width='4'/%3E%3Ccircle cx='64' cy='64' r='34' fill='none' stroke='%236b8afd' stroke-width='8'/%3E%3Cpath d='M64 48v32M48 64h32' stroke='%23e2e6f0' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%230a0a0c'/%3E%3Crect x='10' y='10' width='108' height='108' rx='22' fill='%2314161b' stroke='%23272b35' stroke-width='4'/%3E%3Ccircle cx='64' cy='64' r='34' fill='none' stroke='%236b8afd' stroke-width='8'/%3E%3Cpath d='M64 48v32M48 64h32' stroke='%23e2e6f0' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Meal%20Counter%22%2C%22short_name%22%3A%22MealCounter%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0c%22%2C%22theme_color%22%3A%22%230a0a0c%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20128%20128'%253E%253Crect%20width%3D'128'%20height%3D'128'%20rx%3D'28'%20fill%3D'%25230a0a0c'%2F%253E%253Ccircle%20cx%3D'64'%20cy%3D'64'%20r%3D'38'%20fill%3D'none'%20stroke%3D'%25236b8afd'%20stroke-width%3D'8'%2F%253E%253Cpath%20d%3D'M64%2046v36M46%2064h36'%20stroke%3D'%2523e2e6f0'%20stroke-width%3D'8'%20stroke-linecap%3D'round'%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22128x128%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D" />
+
+  <style>
+    :root {
+      --bg-base: #0a0a0c;
+      --bg-surface: #121316;
+      --bg-elevated: #181a1f;
+      --bg-tap: #1d2028;
+      --bg-tap-active: #282d3a;
+      --border-subtle: #23262f;
+      --border-focus: #4d65b4;
+      --text-primary: #d8dce6;
+      --text-secondary: #8c93a4;
+      --text-muted: #5b6170;
+      --accent: #6b8afd;
+      --accent-soft: rgba(107, 138, 253, 0.14);
+      --success: #4ca97a;
+      --warning: #c89143;
+      --danger: #c65d63;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input, textarea {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    body.stealth-dim {
+      filter: brightness(0.55) contrast(0.92);
+    }
+
+    /* App Container: Mobile-First Single Column */
+    .app-shell {
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(82px + var(--safe-bottom));
+    }
+
+    /* Sticky Top Status Bar */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(10, 10, 12, 0.94);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+    }
+
+    .top-bar-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .meal-totals-block {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .meal-totals-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meal-totals-primary {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meal-totals-sub {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-btn {
+      min-height: 48px;
+      padding: 0 13px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+
+    .top-btn:active:not(:disabled) {
+      transform: scale(0.97);
+      background: var(--bg-tap-active);
+    }
+
+    .top-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    .top-btn.lock-active {
+      background: rgba(200, 145, 67, 0.18);
+      border-color: var(--warning);
+      color: #f3c37a;
+    }
+
+    .top-btn.dim-active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main Content Area */
+    .main-view {
+      flex: 1;
+      padding: 12px 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .view-section {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .view-section.active {
+      display: flex;
+    }
+
+    /* Lock Banner */
+    .lock-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      background: rgba(200, 145, 67, 0.12);
+      border: 1px solid rgba(200, 145, 67, 0.4);
+      color: #ebd0a4;
+      font-size: 0.9rem;
+    }
+
+    .lock-banner.visible {
+      display: flex;
+    }
+
+    /* Counter Item Card */
+    .counter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .item-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s ease;
+    }
+
+    .item-card.just-tapped {
+      border-color: var(--border-focus);
+    }
+
+    .item-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 2px;
+    }
+
+    .item-title-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .item-name {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .item-meta {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .item-running-totals {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .item-count-badge {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .item-sub-totals {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    /* Giant One-Handed Tap Button (84px+ tall) */
+    .tap-primary-btn {
+      width: 100%;
+      min-height: 86px;
+      border-radius: var(--radius-md);
+      border: 1px solid #2b303c;
+      background: var(--bg-tap);
+      color: var(--text-primary);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.08s ease, transform 0.06s ease, border-color 0.12s ease;
+    }
+
+    .tap-primary-btn:active:not(:disabled),
+    .tap-primary-btn.pressing {
+      background: var(--bg-tap-active);
+      border-color: var(--accent);
+      transform: scale(0.99);
+    }
+
+    .tap-primary-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .tap-btn-left {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      text-align: left;
+    }
+
+    .tap-btn-action {
+      font-size: 1.22rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .tap-btn-hint {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .tap-btn-right {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      background: rgba(107, 138, 253, 0.1);
+      border: 1px solid rgba(107, 138, 253, 0.24);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Secondary Controls Row (-1, Handful, Edit) */
+    .item-secondary-row {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr auto;
+      gap: 8px;
+    }
+
+    .item-secondary-row.no-handful {
+      grid-template-columns: 1fr auto;
+    }
+
+    .sec-btn {
+      min-height: 64px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+      transition: background 0.1s ease, transform 0.06s ease;
+    }
+
+    .sec-btn:active:not(:disabled) {
+      background: var(--bg-tap-active);
+      transform: scale(0.98);
+    }
+
+    .sec-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .sec-btn-sub {
+      font-size: 0.73rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+
+    .sec-btn.handful-btn {
+      border-color: rgba(107, 138, 253, 0.3);
+      background: rgba(107, 138, 253, 0.08);
+    }
+
+    .sec-btn.icon-only {
+      padding: 8px 14px;
+      color: var(--text-secondary);
+    }
+
+    /* Action Buttons (64px tall requirement) */
+    .action-btn {
+      min-height: 64px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.06s ease;
+    }
+
+    .action-btn:active:not(:disabled) {
+      transform: scale(0.99);
+      background: var(--bg-tap-active);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .action-btn.primary {
+      background: #1f2d5a;
+      border-color: #3d56a6;
+      color: #e9eeff;
+    }
+
+    .action-btn.success {
+      background: #173326;
+      border-color: #2d6a4f;
+      color: #d8f3dc;
+    }
+
+    .action-btn.danger {
+      background: rgba(198, 93, 99, 0.14);
+      border-color: rgba(198, 93, 99, 0.4);
+      color: #f2b8bc;
+    }
+
+    /* Section Cards & Forms */
+    .panel-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: -8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-input {
+      min-height: 54px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Mode Selector Segment */
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-base);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .mode-btn {
+      min-height: 52px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: var(--bg-tap);
+      color: var(--text-primary);
+      border: 1px solid #2e3444;
+    }
+
+    /* Quick Chips / Favourites / Templates List */
+    .fav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 6px 6px 6px 14px;
+      min-height: 64px;
+    }
+
+    .fav-info {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+
+    .fav-name {
+      font-weight: 600;
+      font-size: 0.96rem;
+      color: var(--text-primary);
+    }
+
+    .fav-details {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .fav-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-btn {
+      min-height: 50px;
+      min-width: 50px;
+      padding: 0 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-btn.add {
+      background: var(--accent-soft);
+      border-color: rgba(107, 138, 253, 0.35);
+      color: var(--accent);
+    }
+
+    .mini-btn.del {
+      color: var(--danger);
+    }
+
+    /* Summary View Formatting */
+    .summary-table {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-total-box {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: rgba(107, 138, 253, 0.08);
+      border: 1px solid rgba(107, 138, 253, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-pre {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      user-select: all;
+      -webkit-user-select: all;
+    }
+
+    /* Bottom Navigation Bar (68px tall touch targets) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(12, 13, 16, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-subtle);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .bottom-nav-inner {
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 6px 8px;
+    }
+
+    .nav-tab {
+      min-height: 64px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-tab.active {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    .nav-tab-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    .nav-badge {
+      position: absolute;
+      top: 6px;
+      right: 16px;
+      background: var(--accent);
+      color: #0a0a0c;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    /* Inline Modal / Sheet for editing item or calibrating handful */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .sheet-backdrop.open {
+      display: flex;
+    }
+
+    .sheet-modal {
+      width: 100%;
+      max-width: 520px;
+      max-height: 90dvh;
+      overflow-y: auto;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      border-radius: 20px 20px 0 0;
+      padding: 18px 16px calc(20px + var(--safe-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Subtle Discreet Toast */
+    .toast {
+      position: fixed;
+      bottom: calc(88px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #232733;
+      color: var(--text-primary);
+      border: 1px solid #394054;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 70;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-secondary);
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .helper-pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+    }
+
+    /* Off-screen rendered iOS 18+ Taptic Engine Switch (must not be display:none or visibility:hidden) */
+    .ios-haptic-proxy {
+      position: fixed;
+      top: -100px;
+      left: -100px;
+      width: 1px;
+      height: 1px;
+      opacity: 0.01;
+      pointer-events: none;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <!-- iOS 18+ Safari Taptic Engine Haptic Switch Workaround -->
+  <input type="checkbox" id="ios-haptic-switch" switch class="ios-haptic-proxy" tabindex="-1" aria-hidden="true" />
+  <label for="ios-haptic-switch" id="ios-haptic-label" class="ios-haptic-proxy" aria-hidden="true"></label>
+
+  <div class="app-shell">
+    <!-- Sticky Header: Running Meal Total + Undo + Dim + Lock -->
+    <header class="top-bar">
+      <div class="top-bar-main">
+        <div class="meal-totals-block" id="headerTotalsBlock">
+          <div class="meal-totals-label">
+            <span>Meal Total</span>
+            <span id="headerItemCount" class="helper-pill">0 items</span>
+          </div>
+          <div class="meal-totals-primary" id="headerKcalTotal">0 kcal</div>
+          <div class="meal-totals-sub" id="headerGramsSub">0 g total</div>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="top-btn" id="undoBtn" disabled title="Undo last count action">
+            <span>↶ Undo</span>
+          </button>
+          <button type="button" class="top-btn" id="dimBtn" title="Toggle extra-dim stealth screen">
+            <span>☾</span>
+          </button>
+          <button type="button" class="top-btn" id="lockBtn" title="Lock screen to prevent pocket taps">
+            <span id="lockBtnLabel">🔓 Lock</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main View Content -->
+    <main class="main-view">
+      <!-- Pocket Lock Banner -->
+      <div class="lock-banner" id="lockBanner">
+        <div>
+          <strong>Pocket Lock Active</strong><br />
+          <span>Counts are locked. Tap Unlock above to resume counting.</span>
+        </div>
+        <button type="button" class="mini-btn" id="unlockBannerBtn">Unlock</button>
+      </div>
+
+      <!-- 1. COUNT VIEW (During Meal) -->
+      <section class="view-section active" id="view-count">
+        <div id="counterItemsContainer" class="counter-list"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
+          <button type="button" class="action-btn" id="goSetupFromCountBtn">
+            <span>＋ Add / Setup Items</span>
+          </button>
+          <button type="button" class="action-btn primary" id="mealDoneBtn">
+            <span>✓ Meal Done</span>
+          </button>
+        </div>
+
+        <button type="button" class="action-btn danger" id="clearAllCountBtn">
+          <span>✕ Clear All Items (Empty Slate)</span>
+        </button>
+      </section>
+
+      <!-- 2. SETUP VIEW (Before Eating: Add Items, Favourites, Meal Templates) -->
+      <section class="view-section" id="view-setup">
+        <!-- Active Meal Slate Card (Manage / Clear Current Items) -->
+        <div class="panel-card">
+          <h2 class="panel-title">
+            <span>Current Meal Slate</span>
+            <span id="setupActiveCountPill" class="helper-pill">0 items</span>
+          </h2>
+          <p class="panel-subtitle">Items currently active on your counter screen.</p>
+          <div id="setupCurrentItemsList" class="fav-list"></div>
+          <button type="button" class="action-btn danger" id="clearAllSetupBtn">
+            <span>✕ Clear All Current Items</span>
+          </button>
+        </div>
+
+        <!-- Add / Edit Item Form -->
+        <div class="panel-card">
+          <h2 class="panel-title">
+            <span id="formTitle">Add Item to Current Meal</span>
+            <button type="button" class="mini-btn" id="resetFormBtn" style="display:none; min-height:36px;">Cancel Edit</button>
+          </h2>
+
+          <form id="itemForm" onsubmit="return false;" style="display:flex; flex-direction:column; gap:12px;">
+            <input type="hidden" id="editMealItemId" value="" />
+
+            <div class="form-group">
+              <label class="form-label" for="itemNameInput">Food Name</label>
+              <input type="text" id="itemNameInput" class="form-input" placeholder="e.g., French fries, Potato wedges, Omelette" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Counting Mode</label>
+              <div class="mode-switch">
+                <button type="button" class="mode-btn active" id="modePieceBtn" data-mode="piece">Per Piece (Sampled)</button>
+                <button type="button" class="mode-btn" id="modeGramBtn" data-mode="gram">Per Gram (Step)</button>
+              </div>
+            </div>
+
+            <!-- Per-Piece Settings -->
+            <div id="pieceSettingsGroup" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="samplePiecesInput">Sample Pieces</label>
+                  <input type="number" inputmode="decimal" step="any" min="1" id="samplePiecesInput" class="form-input" placeholder="e.g., 10" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="sampleGramsInput">Sample Weight (g)</label>
+                  <input type="number" inputmode="decimal" step="any" min="0.1" id="sampleGramsInput" class="form-input" placeholder="e.g., 80" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="avgGramsInput">Avg g / piece (direct)</label>
+                  <input type="number" inputmode="decimal" step="any" min="0.1" id="avgGramsInput" class="form-input" placeholder="e.g., 8.0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="handfulGramsInput">1 Handful (g, optional)</label>
+                  <input type="number" inputmode="decimal" step="any" min="0" id="handfulGramsInput" class="form-input" placeholder="e.g., 40" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Per-Gram Settings -->
+            <div id="gramSettingsGroup" style="display:none; flex-direction:column; gap:12px;">
+              <div class="form-group">
+                <label class="form-label" for="stepGramsInput">Grams Added per Tap (Step Size)</label>
+                <input type="number" inputmode="decimal" step="any" min="1" id="stepGramsInput" class="form-input" value="10" placeholder="10" />
+              </div>
+            </div>
+
+            <!-- Calories & Save Favourite Option -->
+            <div class="form-row" style="align-items: end;">
+              <div class="form-group">
+                <label class="form-label" for="kcalPer100gInput">Calories / 100 g (optional)</label>
+                <input type="number" inputmode="decimal" step="any" min="0" id="kcalPer100gInput" class="form-input" placeholder="Leave blank for g only" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="display:flex; align-items:center; gap:8px; min-height:54px; cursor:pointer; background:var(--bg-base); padding:0 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                  <input type="checkbox" id="saveToFavCheckbox" checked style="width:20px; height:20px;" />
+                  <span style="color:var(--text-primary); font-size:0.86rem;">Save to Favourites</span>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="action-btn primary" id="saveItemBtn">
+              <span>＋ Add to Current Meal</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Favourites (1-Tap Add) -->
+        <div class="panel-card">
+          <h2 class="panel-title">Favourites (1-Tap Add)</h2>
+          <p class="panel-subtitle">Tap any saved item to add it to your current meal.</p>
+          <div id="favouritesListContainer" class="fav-list"></div>
+        </div>
+
+        <!-- Meal Templates -->
+        <div class="panel-card">
+          <h2 class="panel-title">Meal Templates</h2>
+          <p class="panel-subtitle">Load a combination of items in one tap, or save your current meal setup as a template.</p>
+
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="newTemplateNameInput" class="form-input" placeholder="Template name (e.g., Fries + wedges)" />
+            <button type="button" class="action-btn" id="saveTemplateBtn" style="width:auto; min-width:140px; min-height:54px;">
+              Save Current
+            </button>
+          </div>
+
+          <div id="templatesListContainer" class="fav-list"></div>
+        </div>
+      </section>
+
+      <!-- 3. SUMMARY VIEW (After Eating) -->
+      <section class="view-section" id="view-summary">
+        <div class="panel-card">
+          <h2 class="panel-title">Meal Summary</h2>
+          <p class="panel-subtitle">Calories shown with a ±10% range to account for natural piece-to-piece batch variation.</p>
+
+          <div id="summaryItemsList" class="summary-table"></div>
+
+          <div class="summary-total-box" id="summaryTotalBox">
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">Estimated Meal Total</div>
+            <div style="font-size:1.55rem; font-weight:800; color:var(--text-primary);" id="summaryTotalMain">≈ 0 kcal</div>
+            <div style="font-size:0.9rem; color:var(--accent); font-weight:600;" id="summaryTotalRange">±10% range: 0 – 0 kcal</div>
+            <div style="font-size:0.84rem; color:var(--text-secondary);" id="summaryTotalWeight">Total weight: ≈ 0 g</div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <h2 class="panel-title">Plain-Text Clipboard Summary</h2>
+          <pre class="summary-pre" id="summaryPlainText"></pre>
+
+          <button type="button" class="action-btn primary" id="copySummaryBtn">
+            <span>📋 Copy Summary</span>
+          </button>
+
+          <button type="button" class="action-btn success" id="startNewMealBtn">
+            <span>✓ Save to History &amp; Start New Meal</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. HISTORY VIEW (Past Meals) -->
+      <section class="view-section" id="view-history">
+        <div class="panel-card">
+          <h2 class="panel-title">
+            <span>Saved Meal History</span>
+          </h2>
+          <p class="panel-subtitle">Stored offline on this device. Repeat any past meal's items in one tap.</p>
+          <button type="button" class="action-btn danger" id="clearHistoryBtn">
+            <span>✕ Clear History</span>
+          </button>
+          <div id="historyListContainer" class="fav-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button type="button" class="nav-tab active" data-target="view-count">
+          <span class="nav-tab-icon">⊕</span>
+          <span>Count</span>
+          <span class="nav-badge" id="navCountBadge">0</span>
+        </button>
+        <button type="button" class="nav-tab" data-target="view-setup">
+          <span class="nav-tab-icon">⚡</span>
+          <span>Setup / Favs</span>
+        </button>
+        <button type="button" class="nav-tab" data-target="view-summary">
+          <span class="nav-tab-icon">≡</span>
+          <span>Summary</span>
+        </button>
+        <button type="button" class="nav-tab" data-target="view-history">
+          <span class="nav-tab-icon">↺</span>
+          <span>History</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Quick Handful / Item Calibration Bottom Sheet -->
+  <div class="sheet-backdrop" id="handfulSheetBackdrop">
+    <div class="sheet-modal">
+      <h3 class="panel-title" id="sheetTitle">Calibrate Handful</h3>
+      <p class="panel-subtitle" id="sheetSubtitle">Weigh one typical handful and enter its grams below. One tap on the Handful button will add the equivalent pieces.</p>
+      <input type="hidden" id="sheetItemId" />
+      <div class="form-group">
+        <label class="form-label" for="sheetHandfulGramsInput">One Typical Handful Weight (grams)</label>
+        <input type="number" inputmode="decimal" step="any" min="1" id="sheetHandfulGramsInput" class="form-input" placeholder="e.g., 45" />
+      </div>
+      <div id="sheetPreviewText" style="font-size:0.86rem; color:var(--accent);"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button type="button" class="action-btn" id="closeSheetBtn">Cancel</button>
+        <button type="button" class="action-btn primary" id="saveSheetHandfulBtn">Save Handful</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discreet Toast -->
+  <div class="toast" id="toastEl"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // --- LocalStorage Keys ---
+      const STORAGE_KEYS = {
+        CURRENT_MEAL: 'mc_v1_current_meal',
+        FAVOURITES: 'mc_v1_favourites',
+        TEMPLATES: 'mc_v1_templates',
+        HISTORY: 'mc_v1_history',
+        UNDO_STACK: 'mc_v1_undo_stack',
+        SETTINGS: 'mc_v1_settings'
+      };
+
+      // --- Starter Data (Loaded on first launch if localStorage is empty) ---
+      const STARTER_FAVOURITES = [
+        {
+          id: 'fav_fries',
+          name: 'French fries',
+          mode: 'piece',
+          samplePieces: 10,
+          sampleGrams: 80,
+          avgGramsPerPiece: 8.0,
+          stepGrams: 10,
+          kcalPer100g: 318,
+          handfulGrams: 40
+        },
+        {
+          id: 'fav_wedges',
+          name: 'Potato wedges',
+          mode: 'piece',
+          samplePieces: 5,
+          sampleGrams: 75,
+          avgGramsPerPiece: 15.0,
+          stepGrams: 10,
+          kcalPer100g: 300,
+          handfulGrams: 60
+        },
+        {
+          id: 'fav_omelette',
+          name: 'Omelette / egg',
+          mode: 'gram',
+          samplePieces: null,
+          sampleGrams: null,
+          avgGramsPerPiece: null,
+          stepGrams: 10,
+          kcalPer100g: 154,
+          handfulGrams: null
+        }
+      ];
+
+      const STARTER_TEMPLATES = [
+        {
+          id: 'tpl_fries_wedges',
+          name: 'Fries + wedges',
+          items: [
+            {
+              name: 'French fries',
+              mode: 'piece',
+              samplePieces: 10,
+              sampleGrams: 80,
+              avgGramsPerPiece: 8.0,
+              stepGrams: 10,
+              kcalPer100g: 318,
+              handfulGrams: 40
+            },
+            {
+              name: 'Potato wedges',
+              mode: 'piece',
+              samplePieces: 5,
+              sampleGrams: 75,
+              avgGramsPerPiece: 15.0,
+              stepGrams: 10,
+              kcalPer100g: 300,
+              handfulGrams: 60
+            }
+          ]
+        },
+        {
+          id: 'tpl_brunch',
+          name: 'Brunch (Omelette + Wedges)',
+          items: [
+            {
+              name: 'Omelette / egg',
+              mode: 'gram',
+              samplePieces: null,
+              sampleGrams: null,
+              avgGramsPerPiece: null,
+              stepGrams: 10,
+              kcalPer100g: 154,
+              handfulGrams: null
+            },
+            {
+              name: 'Potato wedges',
+              mode: 'piece',
+              samplePieces: 5,
+              sampleGrams: 75,
+              avgGramsPerPiece: 15.0,
+              stepGrams: 10,
+              kcalPer100g: 300,
+              handfulGrams: 60
+            }
+          ]
+        }
+      ];
+
+      // --- State ---
+      let state = {
+        currentMeal: [],
+        favourites: [],
+        templates: [],
+        history: [],
+        undoStack: [],
+        isLocked: false,
+        isDimmed: false,
+        activeTab: 'view-count',
+        formMode: 'piece',
+        confirmClearMealPending: false,
+        confirmClearHistoryPending: false
+      };
+
+      // --- Utility Helpers ---
+      function uid(prefix) {
+        return (prefix || 'id') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+      }
+
+      // Unified Haptic Helper: Android navigator.vibrate + iOS 18+ Taptic Engine switch label click
+      function triggerHaptic(pattern) {
+        try {
+          if (navigator && typeof navigator.vibrate === 'function') {
+            navigator.vibrate(pattern || 18);
+          }
+        } catch (_) {
+          // Ignore on unsupported browsers
+        }
+
+        try {
+          const iosHapticLabel = document.getElementById('ios-haptic-label');
+          if (iosHapticLabel) {
+            iosHapticLabel.click();
+          }
+        } catch (_) {
+          // Ignore if DOM element unavailable
+        }
+      }
+
+      function vibrate(pattern) {
+        triggerHaptic(pattern);
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toastEl');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.classList.remove('show');
+        }, 2100);
+      }
+
+      function formatInt(n) {
+        return Math.round(n).toLocaleString('en-US');
+      }
+
+      function formatDec(n, maxDecimals = 1) {
+        const num = Number(n);
+        if (!Number.isFinite(num)) return '0';
+        return Number(num.toFixed(maxDecimals)).toString();
+      }
+
+      // --- Calculations ---
+      function getItemGrams(item) {
+        const count = Number(item.count) || 0;
+        if (item.mode === 'piece') {
+          return count * (Number(item.avgGramsPerPiece) || 0);
+        } else {
+          return count * (Number(item.stepGrams) || 10);
+        }
+      }
+
+      function getItemKcal(item) {
+        const kcal100 = Number(item.kcalPer100g);
+        if (!kcal100 || kcal100 <= 0) return null;
+        const grams = getItemGrams(item);
+        return (grams / 100) * kcal100;
+      }
+
+      function getHandfulPieces(item) {
+        if (item.mode !== 'piece') return 0;
+        const hGrams = Number(item.handfulGrams);
+        const avgG = Number(item.avgGramsPerPiece);
+        if (!hGrams || hGrams <= 0 || !avgG || avgG <= 0) return 0;
+        return Math.max(1, Math.round(hGrams / avgG));
+      }
+
+      function getMealTotals(items) {
+        let totalGrams = 0;
+        let totalKcal = 0;
+        let hasAnyKcal = false;
+
+        items.forEach(item => {
+          const g = getItemGrams(item);
+          totalGrams += g;
+          const k = getItemKcal(item);
+          if (k !== null) {
+            totalKcal += k;
+            hasAnyKcal = true;
+          }
+        });
+
+        return {
+          totalGrams,
+          totalKcal,
+          hasAnyKcal,
+          minKcal: totalKcal * 0.9,
+          maxKcal: totalKcal * 1.1
+        };
+      }
+
+      // --- Persistence ---
+      function loadState() {
+        try {
+          const savedFavs = localStorage.getItem(STORAGE_KEYS.FAVOURITES);
+          state.favourites = savedFavs ? JSON.parse(savedFavs) : STARTER_FAVOURITES.slice();
+
+          const savedTemplates = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+          state.templates = savedTemplates ? JSON.parse(savedTemplates) : STARTER_TEMPLATES.slice();
+
+          const savedHistory = localStorage.getItem(STORAGE_KEYS.HISTORY);
+          state.history = savedHistory ? JSON.parse(savedHistory) : [];
+
+          const savedUndo = localStorage.getItem(STORAGE_KEYS.UNDO_STACK);
+          state.undoStack = savedUndo ? JSON.parse(savedUndo) : [];
+
+          const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+          if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            state.isDimmed = !!parsed.isDimmed;
+          }
+
+          const savedMeal = localStorage.getItem(STORAGE_KEYS.CURRENT_MEAL);
+          if (savedMeal) {
+            state.currentMeal = JSON.parse(savedMeal);
+          } else {
+            // Preload French fries and Potato wedges at count 0 on very first launch
+            state.currentMeal = [
+              createMealItemFromTemplate(STARTER_FAVOURITES[0]),
+              createMealItemFromTemplate(STARTER_FAVOURITES[1])
+            ];
+          }
+        } catch (e) {
+          state.favourites = STARTER_FAVOURITES.slice();
+          state.templates = STARTER_TEMPLATES.slice();
+          state.currentMeal = [createMealItemFromTemplate(STARTER_FAVOURITES[0])];
+        }
+        saveState();
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.CURRENT_MEAL, JSON.stringify(state.currentMeal));
+          localStorage.setItem(STORAGE_KEYS.FAVOURITES, JSON.stringify(state.favourites));
+          localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(state.templates));
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history));
+          localStorage.setItem(STORAGE_KEYS.UNDO_STACK, JSON.stringify(state.undoStack));
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ isDimmed: state.isDimmed }));
+        } catch (_) {
+          // Ignore quota errors
+        }
+      }
+
+      function createMealItemFromTemplate(src) {
+        return {
+          id: uid('mealitem'),
+          name: src.name,
+          mode: src.mode || 'piece',
+          samplePieces: src.samplePieces || null,
+          sampleGrams: src.sampleGrams || null,
+          avgGramsPerPiece: Number(src.avgGramsPerPiece) || 8,
+          stepGrams: Number(src.stepGrams) || 10,
+          kcalPer100g: src.kcalPer100g !== null && src.kcalPer100g !== undefined && src.kcalPer100g !== '' ? Number(src.kcalPer100g) : null,
+          handfulGrams: src.handfulGrams ? Number(src.handfulGrams) : null,
+          count: 0
+        };
+      }
+
+      // --- Counting & Undo Logic ---
+      function modifyItemCount(itemId, deltaCount, actionLabel, vibratePattern) {
+        if (state.isLocked) {
+          vibrate(10);
+          showToast('Locked — tap Unlock at top first');
+          return;
+        }
+        const item = state.currentMeal.find(i => i.id === itemId);
+        if (!item) return;
+
+        const prevCount = item.count || 0;
+        const nextCount = Math.max(0, prevCount + deltaCount);
+        const actualDelta = nextCount - prevCount;
+        if (actualDelta === 0) return;
+
+        item.count = nextCount;
+        state.undoStack.push({
+          type: 'count',
+          itemId: item.id,
+          itemName: item.name,
+          prevCount,
+          nextCount,
+          delta: actualDelta,
+          label: actionLabel
+        });
+        if (state.undoStack.length > 40) {
+          state.undoStack.shift();
+        }
+
+        vibrate(vibratePattern || 18);
+        saveState();
+        renderHeaderAndCountView(item.id);
+        renderSummaryView();
+      }
+
+      let clearMealConfirmTimer = null;
+      function handleClearCurrentMealTap() {
+        if (state.isLocked) {
+          vibrate(10);
+          showToast('Locked — tap Unlock at top first');
+          return;
+        }
+        if (state.currentMeal.length === 0) {
+          showToast('Meal slate is already empty');
+          return;
+        }
+
+        if (!state.confirmClearMealPending) {
+          state.confirmClearMealPending = true;
+          vibrate(15);
+          updateClearAllButtonsUI();
+          clearTimeout(clearMealConfirmTimer);
+          clearMealConfirmTimer = setTimeout(() => {
+            state.confirmClearMealPending = false;
+            updateClearAllButtonsUI();
+          }, 3200);
+          return;
+        }
+
+        // Confirmed second tap: save snapshot to Undo stack and wipe currentMeal to an empty slate
+        clearTimeout(clearMealConfirmTimer);
+        state.confirmClearMealPending = false;
+
+        const snapshot = state.currentMeal.map(item => Object.assign({}, item));
+        state.undoStack.push({
+          type: 'clear_meal',
+          previousItems: snapshot,
+          label: 'Clear all'
+        });
+        if (state.undoStack.length > 40) {
+          state.undoStack.shift();
+        }
+
+        state.currentMeal = [];
+        resetItemForm();
+        vibrate([25, 35, 25]);
+        saveState();
+        renderAll();
+        showToast('Cleared all items — tap Undo to restore');
+      }
+
+      function updateClearAllButtonsUI() {
+        const countBtn = document.getElementById('clearAllCountBtn');
+        const setupBtn = document.getElementById('clearAllSetupBtn');
+        const isEmpty = state.currentMeal.length === 0;
+        const disabled = state.isLocked || isEmpty;
+
+        [countBtn, setupBtn].forEach(btn => {
+          if (!btn) return;
+          btn.disabled = disabled;
+          if (state.confirmClearMealPending && !disabled) {
+            btn.innerHTML = '<span>⚠ Tap Again to Confirm Clear All</span>';
+          } else {
+            btn.innerHTML = '<span>✕ Clear All Items (Empty Slate)</span>';
+          }
+        });
+      }
+
+      function undoLastAction() {
+        if (state.isLocked) {
+          showToast('Unlock screen first');
+          return;
+        }
+        if (state.undoStack.length === 0) return;
+        const last = state.undoStack.pop();
+
+        if (last.type === 'clear_meal' && Array.isArray(last.previousItems)) {
+          state.currentMeal = last.previousItems;
+          vibrate([15, 25, 15]);
+          showToast('Restored cleared meal items');
+          saveState();
+          renderAll();
+          return;
+        }
+
+        const item = state.currentMeal.find(i => i.id === last.itemId);
+        if (item) {
+          item.count = Math.max(0, last.prevCount);
+          vibrate([15, 25, 15]);
+          showToast(`Undid ${last.label} (${last.itemName})`);
+          saveState();
+          renderAll();
+        }
+      }
+
+      // --- Rendering ---
+      function renderAll() {
+        document.body.classList.toggle('stealth-dim', state.isDimmed);
+        document.getElementById('dimBtn').classList.toggle('dim-active', state.isDimmed);
+
+        const lockBtn = document.getElementById('lockBtn');
+        const lockLabel = document.getElementById('lockBtnLabel');
+        const lockBanner = document.getElementById('lockBanner');
+        lockBtn.classList.toggle('lock-active', state.isLocked);
+        lockLabel.textContent = state.isLocked ? '🔒 Locked' : '🔓 Lock';
+        lockBanner.classList.toggle('visible', state.isLocked);
+
+        renderHeaderAndCountView();
+        renderSetupView();
+        renderSummaryView();
+        renderHistoryView();
+        updateClearAllButtonsUI();
+      }
+
+      function renderHeaderAndCountView(justTappedId) {
+        const totals = getMealTotals(state.currentMeal);
+        const headerKcalEl = document.getElementById('headerKcalTotal');
+        const headerGramsEl = document.getElementById('headerGramsSub');
+        const headerCountEl = document.getElementById('headerItemCount');
+        const navBadgeEl = document.getElementById('navCountBadge');
+
+        headerCountEl.textContent = `${state.currentMeal.length} ${state.currentMeal.length === 1 ? 'item' : 'items'}`;
+        navBadgeEl.textContent = state.currentMeal.length;
+
+        if (totals.hasAnyKcal) {
+          headerKcalEl.textContent = `≈ ${formatInt(totals.totalKcal)} kcal`;
+          headerGramsEl.textContent = `≈ ${formatInt(totals.totalGrams)} g · ±10%: ${formatInt(totals.minKcal)}–${formatInt(totals.maxKcal)} kcal`;
+        } else {
+          headerKcalEl.textContent = `≈ ${formatInt(totals.totalGrams)} g`;
+          headerGramsEl.textContent = `Grams-only mode`;
+        }
+
+        const undoBtn = document.getElementById('undoBtn');
+        undoBtn.disabled = state.isLocked || state.undoStack.length === 0;
+        if (state.undoStack.length > 0) {
+          const topUndo = state.undoStack[state.undoStack.length - 1];
+          undoBtn.innerHTML = `<span>↶ Undo (${topUndo.label})</span>`;
+        } else {
+          undoBtn.innerHTML = `<span>↶ Undo</span>`;
+        }
+
+        const container = document.getElementById('counterItemsContainer');
+        if (state.currentMeal.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size:1.08rem; font-weight:700; color:var(--text-primary);">Empty Meal Slate (0 items)</div>
+              <div>Your current meal is clear. Add food items from your Favourites, Templates, or setup form before eating.</div>
+              <button type="button" class="action-btn primary" id="emptyStateSetupBtn" ${state.isLocked ? 'disabled' : ''}>
+                <span>＋ Open Setup &amp; Favourites</span>
+              </button>
+            </div>
+          `;
+          const emptyBtn = document.getElementById('emptyStateSetupBtn');
+          if (emptyBtn) {
+            emptyBtn.addEventListener('click', () => {
+              if (!state.isLocked) switchTab('view-setup');
+            });
+          }
+          return;
+        }
+
+        container.innerHTML = '';
+        state.currentMeal.forEach(item => {
+          const grams = getItemGrams(item);
+          const kcal = getItemKcal(item);
+          const isPiece = item.mode === 'piece';
+          const handfulPcs = getHandfulPieces(item);
+
+          const card = document.createElement('div');
+          card.className = 'item-card' + (justTappedId === item.id ? ' just-tapped' : '');
+
+          // Build metadata subtitle
+          let metaText = '';
+          if (isPiece) {
+            metaText = `${formatDec(item.avgGramsPerPiece, 1)} g/pc`;
+            if (item.samplePieces && item.sampleGrams) {
+              metaText += ` (${item.samplePieces} pcs = ${item.sampleGrams} g)`;
+            }
+          } else {
+            metaText = `${formatDec(item.stepGrams, 1)} g per tap`;
+          }
+          if (item.kcalPer100g) {
+            metaText += ` · ${formatInt(item.kcalPer100g)} kcal/100g`;
+          }
+
+          // Count & Running totals
+          const countLabel = isPiece
+            ? `${item.count} ${item.count === 1 ? 'pc' : 'pcs'}`
+            : `${formatInt(grams)} g (${item.count} ${item.count === 1 ? 'tap' : 'taps'})`;
+
+          const subTotalText = isPiece
+            ? `≈ ${formatInt(grams)} g` + (kcal !== null ? ` · ≈ ${formatInt(kcal)} kcal` : '')
+            : (kcal !== null ? `≈ ${formatInt(kcal)} kcal` : `${formatDec(item.stepGrams, 1)} g step`);
+
+          const tapActionText = isPiece
+            ? `+1 piece (${formatDec(item.avgGramsPerPiece, 1)} g)`
+            : `+${formatDec(item.stepGrams, 1)} g`;
+
+          const longPressHintText = isPiece
+            ? `Tap: +1 pc · Hold: +5 pcs (${formatDec(item.avgGramsPerPiece * 5, 0)} g)`
+            : `Tap: +${formatDec(item.stepGrams, 1)} g · Hold: +${formatDec(item.stepGrams * 5, 0)} g`;
+
+          const rightBadgeText = isPiece ? `+1` : `+${formatDec(item.stepGrams, 0)}g`;
+
+          // Handful button markup (piece mode only)
+          let handfulHtml = '';
+          if (isPiece) {
+            if (handfulPcs > 0) {
+              handfulHtml = `
+                <button type="button" class="sec-btn handful-btn" data-handful-id="${item.id}" ${state.isLocked ? 'disabled' : ''}>
+                  <span>🤚 +Handful (+${handfulPcs} pcs)</span>
+                  <span class="sec-btn-sub">≈ ${formatInt(item.handfulGrams)} g · <u data-cal-handful="${item.id}">recalibrate</u></span>
+                </button>
+              `;
+            } else {
+              handfulHtml = `
+                <button type="button" class="sec-btn handful-btn" data-cal-handful="${item.id}" ${state.isLocked ? 'disabled' : ''}>
+                  <span>🤚 Calibrate Handful</span>
+                  <span class="sec-btn-sub">Set grams for 1-tap handful</span>
+                </button>
+              `;
+            }
+          }
+
+          card.innerHTML = `
+            <div class="item-header">
+              <div class="item-title-group">
+                <div class="item-name">${escapeHtml(item.name)}</div>
+                <div class="item-meta">${escapeHtml(metaText)}</div>
+              </div>
+              <div class="item-running-totals">
+                <div class="item-count-badge">${escapeHtml(countLabel)}</div>
+                <div class="item-sub-totals">${escapeHtml(subTotalText)}</div>
+              </div>
+            </div>
+
+            <button type="button" class="tap-primary-btn" data-tap-id="${item.id}" ${state.isLocked ? 'disabled' : ''}>
+              <div class="tap-btn-left">
+                <span class="tap-btn-action">${escapeHtml(tapActionText)}</span>
+                <span class="tap-btn-hint">${escapeHtml(longPressHintText)}</span>
+              </div>
+              <div class="tap-btn-right">${escapeHtml(rightBadgeText)}</div>
+            </button>
+
+            <div class="item-secondary-row ${isPiece ? '' : 'no-handful'}">
+              <button type="button" class="sec-btn" data-minus-id="${item.id}" ${(state.isLocked || item.count <= 0) ? 'disabled' : ''}>
+                <span>−1 ${isPiece ? 'pc' : 'step'}</span>
+                <span class="sec-btn-sub">${isPiece ? `−${formatDec(item.avgGramsPerPiece, 1)} g` : `−${formatDec(item.stepGrams, 1)} g`}</span>
+              </button>
+              ${handfulHtml}
+              <button type="button" class="sec-btn icon-only" data-edit-id="${item.id}" ${state.isLocked ? 'disabled' : ''} title="Edit or remove item">
+                <span>⚙</span>
+                <span class="sec-btn-sub">Edit</span>
+              </button>
+            </div>
+          `;
+
+          // Attach Tap vs Long-Press (450ms) handler on the big primary button
+          const primaryBtn = card.querySelector('[data-tap-id]');
+          attachTapAndLongPress(primaryBtn, () => {
+            // Single Tap: +1
+            const label = isPiece ? '+1 pc' : `+${formatDec(item.stepGrams, 0)}g`;
+            modifyItemCount(item.id, 1, label, 18);
+          }, () => {
+            // Long Press: +5
+            const label = isPiece ? '+5 pcs' : `+${formatDec(item.stepGrams * 5, 0)}g`;
+            modifyItemCount(item.id, 5, label, [30, 45, 35]);
+            showToast(`Added ${label} to ${item.name}`);
+          });
+
+          // Minus 1 button
+          const minusBtn = card.querySelector('[data-minus-id]');
+          minusBtn.addEventListener('click', () => {
+            const label = isPiece ? '−1 pc' : `−${formatDec(item.stepGrams, 0)}g`;
+            modifyItemCount(item.id, -1, label, 12);
+          });
+
+          // Handful add or calibrate
+          const handfulBtn = card.querySelector('[data-handful-id]');
+          if (handfulBtn) {
+            handfulBtn.addEventListener('click', (e) => {
+              if (e.target && e.target.hasAttribute('data-cal-handful')) {
+                e.stopPropagation();
+                openHandfulSheet(item.id);
+                return;
+              }
+              const pcs = getHandfulPieces(item);
+              if (pcs > 0) {
+                modifyItemCount(item.id, pcs, `+Handful (${pcs} pcs)`, [25, 30, 25]);
+              }
+            });
+          }
+
+          const calBtn = card.querySelector('button[data-cal-handful]');
+          if (calBtn) {
+            calBtn.addEventListener('click', () => openHandfulSheet(item.id));
+          }
+
+          // Edit button
+          const editBtn = card.querySelector('[data-edit-id]');
+          editBtn.addEventListener('click', () => {
+            populateFormForEdit(item);
+            switchTab('view-setup');
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      // --- Touch / Pointer Tap & Long-Press Handler ---
+      function attachTapAndLongPress(btnEl, onTap, onLongPress) {
+        let timer = null;
+        let longPressTriggered = false;
+
+        function startPress(e) {
+          if (btnEl.disabled) return;
+          if (e.type === 'mousedown' && e.button !== 0) return;
+          longPressTriggered = false;
+          btnEl.classList.add('pressing');
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            longPressTriggered = true;
+            btnEl.classList.remove('pressing');
+            onLongPress();
+          }, 460);
+        }
+
+        function endPress(e) {
+          if (btnEl.disabled) return;
+          clearTimeout(timer);
+          btnEl.classList.remove('pressing');
+          if (!longPressTriggered) {
+            onTap();
+          } else {
+            // Reinforce iOS Taptic feedback synchronously on finger release after a long-press
+            triggerHaptic(15);
+          }
+          longPressTriggered = false;
+        }
+
+        function cancelPress() {
+          clearTimeout(timer);
+          btnEl.classList.remove('pressing');
+          longPressTriggered = false;
+        }
+
+        btnEl.addEventListener('pointerdown', startPress);
+        btnEl.addEventListener('pointerup', endPress);
+        btnEl.addEventListener('pointercancel', cancelPress);
+        btnEl.addEventListener('pointerleave', cancelPress);
+        btnEl.addEventListener('contextmenu', e => e.preventDefault());
+      }
+
+      // --- Setup View (Favourites & Templates) ---
+      function renderSetupView() {
+        // Active Current Meal Slate List in Setup View
+        const activeCountPill = document.getElementById('setupActiveCountPill');
+        const activeListEl = document.getElementById('setupCurrentItemsList');
+        if (activeCountPill) {
+          activeCountPill.textContent = `${state.currentMeal.length} ${state.currentMeal.length === 1 ? 'item' : 'items'}`;
+        }
+        if (activeListEl) {
+          if (state.currentMeal.length === 0) {
+            activeListEl.innerHTML = `<div style="color:var(--text-secondary); font-size:0.86rem;">Empty slate — no active items in the current meal.</div>`;
+          } else {
+            activeListEl.innerHTML = '';
+            state.currentMeal.forEach(item => {
+              const row = document.createElement('div');
+              row.className = 'fav-item';
+              const g = getItemGrams(item);
+              const detailText = item.mode === 'piece'
+                ? `${item.count} pcs (≈ ${formatInt(g)} g) · ${formatDec(item.avgGramsPerPiece, 1)} g/pc`
+                : `${item.count} taps (≈ ${formatInt(g)} g) · ${formatDec(item.stepGrams, 1)} g/tap`;
+
+              row.innerHTML = `
+                <div class="fav-info">
+                  <div class="fav-name">${escapeHtml(item.name)}</div>
+                  <div class="fav-details">${escapeHtml(detailText)}</div>
+                </div>
+                <div class="fav-actions">
+                  <button type="button" class="mini-btn" data-edit-active="${item.id}" ${state.isLocked ? 'disabled' : ''}>Edit</button>
+                  <button type="button" class="mini-btn del" data-remove-active="${item.id}" ${state.isLocked ? 'disabled' : ''} title="Remove item">✕</button>
+                </div>
+              `;
+
+              row.querySelector('[data-edit-active]').addEventListener('click', () => {
+                if (state.isLocked) return;
+                populateFormForEdit(item);
+              });
+
+              row.querySelector('[data-remove-active]').addEventListener('click', () => {
+                if (state.isLocked) return;
+                state.currentMeal = state.currentMeal.filter(i => i.id !== item.id);
+                saveState();
+                renderAll();
+                showToast(`Removed ${item.name}`);
+              });
+
+              activeListEl.appendChild(row);
+            });
+          }
+        }
+
+        const favContainer = document.getElementById('favouritesListContainer');
+        if (state.favourites.length === 0) {
+          favContainer.innerHTML = `<div style="color:var(--text-secondary); font-size:0.86rem;">No saved favourites yet. Check "Save to Favourites" when adding an item above.</div>`;
+        } else {
+          favContainer.innerHTML = '';
+          state.favourites.forEach(fav => {
+            const row = document.createElement('div');
+            row.className = 'fav-item';
+            const modeDesc = fav.mode === 'piece'
+              ? `${formatDec(fav.avgGramsPerPiece, 1)} g/pc` + (fav.handfulGrams ? ` · handful ${fav.handfulGrams}g` : '')
+              : `${formatDec(fav.stepGrams, 1)} g/tap`;
+            const kcalDesc = fav.kcalPer100g ? ` · ${formatInt(fav.kcalPer100g)} kcal/100g` : ' · grams only';
+
+            row.innerHTML = `
+              <div class="fav-info" data-add-fav="${fav.id}">
+                <div class="fav-name">${escapeHtml(fav.name)}</div>
+                <div class="fav-details">${escapeHtml(modeDesc + kcalDesc)}</div>
+              </div>
+              <div class="fav-actions">
+                <button type="button" class="mini-btn add" data-add-fav="${fav.id}">＋ Add</button>
+                <button type="button" class="mini-btn del" data-del-fav="${fav.id}" title="Delete favourite">✕</button>
+              </div>
+            `;
+
+            row.querySelectorAll('[data-add-fav]').forEach(el => {
+              el.addEventListener('click', () => {
+                const newItem = createMealItemFromTemplate(fav);
+                state.currentMeal.push(newItem);
+                vibrate(15);
+                saveState();
+                renderAll();
+                showToast(`Added ${fav.name} to meal`);
+              });
+            });
+
+            row.querySelector('[data-del-fav]').addEventListener('click', () => {
+              state.favourites = state.favourites.filter(f => f.id !== fav.id);
+              saveState();
+              renderSetupView();
+              showToast(`Removed ${fav.name} from favourites`);
+            });
+
+            favContainer.appendChild(row);
+          });
+        }
+
+        // Templates List
+        const tplContainer = document.getElementById('templatesListContainer');
+        if (state.templates.length === 0) {
+          tplContainer.innerHTML = `<div style="color:var(--text-secondary); font-size:0.86rem;">No meal templates saved yet.</div>`;
+        } else {
+          tplContainer.innerHTML = '';
+          state.templates.forEach(tpl => {
+            const row = document.createElement('div');
+            row.className = 'fav-item';
+            const itemNames = (tpl.items || []).map(i => i.name).join(', ');
+            row.innerHTML = `
+              <div class="fav-info" data-load-tpl="${tpl.id}">
+                <div class="fav-name">${escapeHtml(tpl.name)}</div>
+                <div class="fav-details">${escapeHtml(itemNames)}</div>
+              </div>
+              <div class="fav-actions">
+                <button type="button" class="mini-btn add" data-load-tpl="${tpl.id}">Load</button>
+                <button type="button" class="mini-btn del" data-del-tpl="${tpl.id}" title="Delete template">✕</button>
+              </div>
+            `;
+
+            row.querySelectorAll('[data-load-tpl]').forEach(el => {
+              el.addEventListener('click', () => {
+                state.currentMeal = (tpl.items || []).map(src => createMealItemFromTemplate(src));
+                state.undoStack = [];
+                vibrate([18, 30, 18]);
+                saveState();
+                renderAll();
+                switchTab('view-count');
+                showToast(`Loaded template "${tpl.name}"`);
+              });
+            });
+
+            row.querySelector('[data-del-tpl]').addEventListener('click', () => {
+              state.templates = state.templates.filter(t => t.id !== tpl.id);
+              saveState();
+              renderSetupView();
+              showToast(`Deleted template "${tpl.name}"`);
+            });
+
+            tplContainer.appendChild(row);
+          });
+        }
+      }
+
+      // --- Summary View & Plain-Text Formatting ---
+      function generateSummaryPlainText(items) {
+        if (!items || items.length === 0) {
+          return 'No items logged in this meal.';
+        }
+        const lines = [];
+        let totalKcal = 0;
+        let totalGrams = 0;
+        let hasAnyKcal = false;
+
+        items.forEach(item => {
+          const grams = getItemGrams(item);
+          const kcal = getItemKcal(item);
+          totalGrams += grams;
+          if (kcal !== null) {
+            totalKcal += kcal;
+            hasAnyKcal = true;
+          }
+
+          if (item.mode === 'piece') {
+            let line = `- ${item.name}: ${item.count} pcs ≈ ${formatInt(grams)} g`;
+            if (kcal !== null) {
+              line += ` ≈ ${formatInt(kcal)} kcal`;
+            }
+            lines.push(line);
+          } else {
+            let line = `- ${item.name}: ≈ ${formatInt(grams)} g`;
+            if (kcal !== null) {
+              line += ` ≈ ${formatInt(kcal)} kcal`;
+            }
+            lines.push(line);
+          }
+        });
+
+        if (hasAnyKcal) {
+          lines.push(`- Meal total: ≈ ${formatInt(totalKcal)} kcal`);
+        } else {
+          lines.push(`- Meal total: ≈ ${formatInt(totalGrams)} g`);
+        }
+
+        return lines.join('\n');
+      }
+
+      function renderSummaryView() {
+        const listEl = document.getElementById('summaryItemsList');
+        const mainTotalEl = document.getElementById('summaryTotalMain');
+        const rangeTotalEl = document.getElementById('summaryTotalRange');
+        const weightTotalEl = document.getElementById('summaryTotalWeight');
+        const preEl = document.getElementById('summaryPlainText');
+
+        const totals = getMealTotals(state.currentMeal);
+
+        if (state.currentMeal.length === 0) {
+          listEl.innerHTML = `<div style="color:var(--text-secondary); font-size:0.9rem;">No items in current meal.</div>`;
+        } else {
+          listEl.innerHTML = '';
+          state.currentMeal.forEach(item => {
+            const grams = getItemGrams(item);
+            const kcal = getItemKcal(item);
+            const row = document.createElement('div');
+            row.className = 'summary-row';
+
+            const countPart = item.mode === 'piece'
+              ? `${item.count} pcs ≈ ${formatInt(grams)} g`
+              : `${item.count} taps ≈ ${formatInt(grams)} g`;
+
+            let rightPart = `≈ ${formatInt(grams)} g`;
+            let rangeSub = '';
+            if (kcal !== null) {
+              const minK = formatInt(kcal * 0.9);
+              const maxK = formatInt(kcal * 1.1);
+              rightPart = `≈ ${formatInt(kcal)} kcal`;
+              rangeSub = `<div style="font-size:0.75rem; color:var(--text-secondary);">±10%: ${minK}–${maxK} kcal</div>`;
+            }
+
+            row.innerHTML = `
+              <div>
+                <div style="font-weight:700; color:var(--text-primary);">${escapeHtml(item.name)}</div>
+                <div style="font-size:0.82rem; color:var(--text-secondary);">${escapeHtml(countPart)}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-weight:700; color:var(--accent);">${rightPart}</div>
+                ${rangeSub}
+              </div>
+            `;
+            listEl.appendChild(row);
+          });
+        }
+
+        if (totals.hasAnyKcal) {
+          mainTotalEl.textContent = `≈ ${formatInt(totals.totalKcal)} kcal`;
+          rangeTotalEl.textContent = `±10% batch range: ${formatInt(totals.minKcal)} – ${formatInt(totals.maxKcal)} kcal`;
+          rangeTotalEl.style.display = 'block';
+        } else {
+          mainTotalEl.textContent = `≈ ${formatInt(totals.totalGrams)} g`;
+          rangeTotalEl.style.display = 'none';
+        }
+        weightTotalEl.textContent = `Total weight: ≈ ${formatInt(totals.totalGrams)} g`;
+
+        preEl.textContent = generateSummaryPlainText(state.currentMeal);
+      }
+
+      // --- History View ---
+      function renderHistoryView() {
+        const container = document.getElementById('historyListContainer');
+        if (state.history.length === 0) {
+          container.innerHTML = `<div style="color:var(--text-secondary); font-size:0.9rem;">No past meals saved yet. Tap "Save to History & Start New Meal" in the Summary tab when finished eating.</div>`;
+          return;
+        }
+
+        container.innerHTML = '';
+        state.history.forEach(entry => {
+          const card = document.createElement('div');
+          card.className = 'panel-card';
+          card.style.padding = '12px';
+          card.style.background = 'var(--bg-elevated)';
+
+          const dateStr = new Date(entry.timestamp).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const totalStr = entry.hasAnyKcal
+            ? `≈ ${formatInt(entry.totalKcal)} kcal (${formatInt(entry.totalGrams)} g)`
+            : `≈ ${formatInt(entry.totalGrams)} g`;
+
+          const summaryLines = (entry.items || []).map(it => {
+            return it.mode === 'piece'
+              ? `${it.name}: ${it.count} pcs (${formatInt(it.grams)} g)`
+              : `${it.name}: ${formatInt(it.grams)} g`;
+          }).join(' · ');
+
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <strong style="font-size:0.95rem;">${escapeHtml(dateStr)}</strong>
+              <span style="color:var(--accent); font-weight:700; font-size:0.92rem;">${escapeHtml(totalStr)}</span>
+            </div>
+            <div style="font-size:0.82rem; color:var(--text-secondary);">${escapeHtml(summaryLines)}</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-top:4px;">
+              <button type="button" class="mini-btn add" data-repeat-hist="${entry.id}">↺ Repeat Items</button>
+              <button type="button" class="mini-btn" data-copy-hist="${entry.id}">📋 Copy</button>
+              <button type="button" class="mini-btn del" data-del-hist="${entry.id}">✕</button>
+            </div>
+          `;
+
+          card.querySelector('[data-repeat-hist]').addEventListener('click', () => {
+            state.currentMeal = (entry.items || []).map(src => createMealItemFromTemplate(src));
+            state.undoStack = [];
+            vibrate(20);
+            saveState();
+            renderAll();
+            switchTab('view-count');
+            showToast('Repeated meal items (counts reset to 0)');
+          });
+
+          card.querySelector('[data-copy-hist]').addEventListener('click', () => {
+            copyTextToClipboard(entry.plainText || '');
+            showToast('Copied past meal summary');
+          });
+
+          card.querySelector('[data-del-hist]').addEventListener('click', () => {
+            state.history = state.history.filter(h => h.id !== entry.id);
+            saveState();
+            renderHistoryView();
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      // --- Clipboard Helper ---
+      function copyTextToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand('copy');
+        } catch (_) {}
+        document.body.removeChild(ta);
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // --- Form & Setup Interactions ---
+      function setFormMode(mode) {
+        state.formMode = mode;
+        document.getElementById('modePieceBtn').classList.toggle('active', mode === 'piece');
+        document.getElementById('modeGramBtn').classList.toggle('active', mode === 'gram');
+        document.getElementById('pieceSettingsGroup').style.display = mode === 'piece' ? 'flex' : 'none';
+        document.getElementById('gramSettingsGroup').style.display = mode === 'gram' ? 'flex' : 'none';
+      }
+
+      function populateFormForEdit(item) {
+        document.getElementById('editMealItemId').value = item.id;
+        document.getElementById('formTitle').textContent = `Edit "${item.name}"`;
+        document.getElementById('resetFormBtn').style.display = 'inline-flex';
+        document.getElementById('saveItemBtn').innerHTML = `<span>✓ Update Item</span>`;
+
+        document.getElementById('itemNameInput').value = item.name;
+        setFormMode(item.mode);
+        document.getElementById('samplePiecesInput').value = item.samplePieces || '';
+        document.getElementById('sampleGramsInput').value = item.sampleGrams || '';
+        document.getElementById('avgGramsInput').value = item.avgGramsPerPiece || '';
+        document.getElementById('handfulGramsInput').value = item.handfulGrams || '';
+        document.getElementById('stepGramsInput').value = item.stepGrams || 10;
+        document.getElementById('kcalPer100gInput').value = item.kcalPer100g !== null ? item.kcalPer100g : '';
+
+        // Add a temporary Delete Item button if not already there
+        let delBtn = document.getElementById('deleteEditingItemBtn');
+        if (!delBtn) {
+          delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.id = 'deleteEditingItemBtn';
+          delBtn.className = 'action-btn danger';
+          delBtn.innerHTML = '<span>✕ Remove Item from Meal</span>';
+          document.getElementById('itemForm').appendChild(delBtn);
+          delBtn.addEventListener('click', () => {
+            const editId = document.getElementById('editMealItemId').value;
+            if (editId) {
+              state.currentMeal = state.currentMeal.filter(i => i.id !== editId);
+              resetItemForm();
+              saveState();
+              renderAll();
+              switchTab('view-count');
+              showToast('Removed item from meal');
+            }
+          });
+        }
+        delBtn.style.display = 'flex';
+      }
+
+      function resetItemForm() {
+        document.getElementById('editMealItemId').value = '';
+        document.getElementById('formTitle').textContent = 'Add Item to Current Meal';
+        document.getElementById('resetFormBtn').style.display = 'none';
+        document.getElementById('saveItemBtn').innerHTML = `<span>＋ Add to Current Meal</span>`;
+        document.getElementById('itemForm').reset();
+        document.getElementById('stepGramsInput').value = '10';
+        setFormMode('piece');
+        const delBtn = document.getElementById('deleteEditingItemBtn');
+        if (delBtn) delBtn.style.display = 'none';
+      }
+
+      // --- Handful Calibration Sheet ---
+      function openHandfulSheet(itemId) {
+        const item = state.currentMeal.find(i => i.id === itemId);
+        if (!item) return;
+        document.getElementById('sheetItemId').value = item.id;
+        document.getElementById('sheetTitle').textContent = `Calibrate Handful: ${item.name}`;
+        const input = document.getElementById('sheetHandfulGramsInput');
+        input.value = item.handfulGrams || '';
+        updateSheetPreview(item, input.value);
+        document.getElementById('handfulSheetBackdrop').classList.add('open');
+        setTimeout(() => input.focus(), 60);
+      }
+
+      function updateSheetPreview(item, gramsVal) {
+        const previewEl = document.getElementById('sheetPreviewText');
+        const g = parseFloat(gramsVal);
+        if (!g || g <= 0 || !item.avgGramsPerPiece) {
+          previewEl.textContent = `Current average: ${formatDec(item.avgGramsPerPiece, 1)} g per piece.`;
+          return;
+        }
+        const pcs = Math.max(1, Math.round(g / item.avgGramsPerPiece));
+        previewEl.textContent = `1 handful (${formatInt(g)} g) ≈ ${pcs} pieces (at ${formatDec(item.avgGramsPerPiece, 1)} g/pc).`;
+      }
+
+      // --- Tab Navigation ---
+      function switchTab(targetId) {
+        state.activeTab = targetId;
+        document.querySelectorAll('.view-section').forEach(sec => {
+          sec.classList.toggle('active', sec.id === targetId);
+        });
+        document.querySelectorAll('.nav-tab').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-target') === targetId);
+        });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      // --- Event Listeners Initialization ---
+      function initEvents() {
+        // Bottom Nav Tabs
+        document.querySelectorAll('.nav-tab').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (state.isLocked) {
+              vibrate(10);
+              showToast('Pocket Lock is active — tap Unlock at top');
+              return;
+            }
+            switchTab(btn.getAttribute('data-target'));
+          });
+        });
+
+        // Quick buttons in Count View
+        document.getElementById('goSetupFromCountBtn').addEventListener('click', () => {
+          if (state.isLocked) {
+            showToast('Unlock screen first');
+            return;
+          }
+          switchTab('view-setup');
+        });
+
+        document.getElementById('mealDoneBtn').addEventListener('click', () => {
+          if (state.isLocked) {
+            showToast('Unlock screen first');
+            return;
+          }
+          vibrate(20);
+          switchTab('view-summary');
+        });
+
+        // Clear All Current Meal Buttons (Counter View & Setup View)
+        document.getElementById('clearAllCountBtn').addEventListener('click', handleClearCurrentMealTap);
+        document.getElementById('clearAllSetupBtn').addEventListener('click', handleClearCurrentMealTap);
+
+        // Top Bar Controls: Undo, Dim, Lock
+        document.getElementById('undoBtn').addEventListener('click', undoLastAction);
+
+        document.getElementById('dimBtn').addEventListener('click', () => {
+          state.isDimmed = !state.isDimmed;
+          triggerHaptic(12);
+          saveState();
+          renderAll();
+          showToast(state.isDimmed ? 'Extra-dim mode ON' : 'Normal dark brightness');
+        });
+
+        function toggleLock() {
+          state.isLocked = !state.isLocked;
+          vibrate(state.isLocked ? [20, 30, 20] : 25);
+          renderAll();
+          showToast(state.isLocked ? 'Counts locked for pocket/lap' : 'Unlocked');
+        }
+
+        document.getElementById('lockBtn').addEventListener('click', toggleLock);
+        document.getElementById('unlockBannerBtn').addEventListener('click', toggleLock);
+
+        // Setup Form Mode Switch
+        document.getElementById('modePieceBtn').addEventListener('click', () => setFormMode('piece'));
+        document.getElementById('modeGramBtn').addEventListener('click', () => setFormMode('gram'));
+
+        // Auto-calculate Avg Grams per Piece from Sample Pieces & Sample Grams
+        const samplePiecesEl = document.getElementById('samplePiecesInput');
+        const sampleGramsEl = document.getElementById('sampleGramsInput');
+        const avgGramsEl = document.getElementById('avgGramsInput');
+
+        function recalcAvgFromSample() {
+          const pcs = parseFloat(samplePiecesEl.value);
+          const gms = parseFloat(sampleGramsEl.value);
+          if (pcs > 0 && gms > 0) {
+            avgGramsEl.value = Number((gms / pcs).toFixed(2));
+          }
+        }
+
+        samplePiecesEl.addEventListener('input', recalcAvgFromSample);
+        sampleGramsEl.addEventListener('input', recalcAvgFromSample);
+
+        document.getElementById('resetFormBtn').addEventListener('click', resetItemForm);
+
+        // Submit Add / Edit Item Form
+        document.getElementById('itemForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = document.getElementById('itemNameInput').value.trim();
+          if (!name) return;
+
+          const mode = state.formMode;
+          const samplePieces = parseFloat(samplePiecesEl.value) || null;
+          const sampleGrams = parseFloat(sampleGramsEl.value) || null;
+          let avgGramsPerPiece = parseFloat(avgGramsEl.value);
+          if (mode === 'piece' && (!avgGramsPerPiece || avgGramsPerPiece <= 0)) {
+            if (samplePieces > 0 && sampleGrams > 0) {
+              avgGramsPerPiece = sampleGrams / samplePieces;
+            } else {
+              showToast('Enter sample weight or avg g/piece');
+              return;
+            }
+          }
+
+          const stepGrams = parseFloat(document.getElementById('stepGramsInput').value) || 10;
+          const kcalRaw = document.getElementById('kcalPer100gInput').value.trim();
+          const kcalPer100g = kcalRaw !== '' ? parseFloat(kcalRaw) : null;
+          const handfulRaw = document.getElementById('handfulGramsInput').value.trim();
+          const handfulGrams = handfulRaw !== '' ? parseFloat(handfulRaw) : null;
+
+          const editId = document.getElementById('editMealItemId').value;
+          if (editId) {
+            const existing = state.currentMeal.find(i => i.id === editId);
+            if (existing) {
+              existing.name = name;
+              existing.mode = mode;
+              existing.samplePieces = samplePieces;
+              existing.sampleGrams = sampleGrams;
+              existing.avgGramsPerPiece = mode === 'piece' ? avgGramsPerPiece : null;
+              existing.stepGrams = stepGrams;
+              existing.kcalPer100g = kcalPer100g;
+              existing.handfulGrams = handfulGrams;
+            }
+          } else {
+            state.currentMeal.push({
+              id: uid('mealitem'),
+              name,
+              mode,
+              samplePieces,
+              sampleGrams,
+              avgGramsPerPiece: mode === 'piece' ? avgGramsPerPiece : null,
+              stepGrams,
+              kcalPer100g,
+              handfulGrams,
+              count: 0
+            });
+          }
+
+          // Save or update in Favourites if checked
+          if (document.getElementById('saveToFavCheckbox').checked) {
+            const existingFavIdx = state.favourites.findIndex(f => f.name.toLowerCase() === name.toLowerCase());
+            const favObj = {
+              id: existingFavIdx >= 0 ? state.favourites[existingFavIdx].id : uid('fav'),
+              name,
+              mode,
+              samplePieces,
+              sampleGrams,
+              avgGramsPerPiece: mode === 'piece' ? avgGramsPerPiece : null,
+              stepGrams,
+              kcalPer100g,
+              handfulGrams
+            };
+            if (existingFavIdx >= 0) {
+              state.favourites[existingFavIdx] = favObj;
+            } else {
+              state.favourites.unshift(favObj);
+            }
+          }
+
+          vibrate(20);
+          resetItemForm();
+          saveState();
+          renderAll();
+          switchTab('view-count');
+          showToast(editId ? `Updated ${name}` : `Added ${name} to meal`);
+        });
+
+        // Save Current Meal as Template
+        document.getElementById('saveTemplateBtn').addEventListener('click', () => {
+          if (state.currentMeal.length === 0) {
+            showToast('Add items to the current meal first');
+            return;
+          }
+          const nameInput = document.getElementById('newTemplateNameInput');
+          const tplName = nameInput.value.trim() || state.currentMeal.map(i => i.name).join(' + ');
+          state.templates.unshift({
+            id: uid('tpl'),
+            name: tplName,
+            items: state.currentMeal.map(i => ({
+              name: i.name,
+              mode: i.mode,
+              samplePieces: i.samplePieces,
+              sampleGrams: i.sampleGrams,
+              avgGramsPerPiece: i.avgGramsPerPiece,
+              stepGrams: i.stepGrams,
+              kcalPer100g: i.kcalPer100g,
+              handfulGrams: i.handfulGrams
+            }))
+          });
+          nameInput.value = '';
+          saveState();
+          renderSetupView();
+          showToast(`Saved template "${tplName}"`);
+        });
+
+        // Handful Sheet Events
+        document.getElementById('sheetHandfulGramsInput').addEventListener('input', (e) => {
+          const itemId = document.getElementById('sheetItemId').value;
+          const item = state.currentMeal.find(i => i.id === itemId);
+          if (item) updateSheetPreview(item, e.target.value);
+        });
+
+        document.getElementById('closeSheetBtn').addEventListener('click', () => {
+          document.getElementById('handfulSheetBackdrop').classList.remove('open');
+        });
+
+        document.getElementById('saveSheetHandfulBtn').addEventListener('click', () => {
+          const itemId = document.getElementById('sheetItemId').value;
+          const gVal = parseFloat(document.getElementById('sheetHandfulGramsInput').value);
+          const item = state.currentMeal.find(i => i.id === itemId);
+          if (item) {
+            item.handfulGrams = gVal > 0 ? gVal : null;
+            // Also sync to matching favourite
+            const fav = state.favourites.find(f => f.name.toLowerCase() === item.name.toLowerCase());
+            if (fav) fav.handfulGrams = item.handfulGrams;
+            saveState();
+            renderAll();
+            showToast(gVal > 0 ? `Calibrated handful (${gVal} g)` : 'Cleared handful calibration');
+          }
+          document.getElementById('handfulSheetBackdrop').classList.remove('open');
+        });
+
+        // Summary View Actions: Copy & Start New Meal
+        document.getElementById('copySummaryBtn').addEventListener('click', () => {
+          const text = generateSummaryPlainText(state.currentMeal);
+          copyTextToClipboard(text);
+          vibrate(20);
+          showToast('Copied meal summary to clipboard');
+        });
+
+        document.getElementById('startNewMealBtn').addEventListener('click', () => {
+          const totals = getMealTotals(state.currentMeal);
+          const hasCounts = state.currentMeal.some(i => i.count > 0);
+
+          if (state.currentMeal.length > 0 && hasCounts) {
+            state.history.unshift({
+              id: uid('hist'),
+              timestamp: Date.now(),
+              totalGrams: totals.totalGrams,
+              totalKcal: totals.totalKcal,
+              hasAnyKcal: totals.hasAnyKcal,
+              plainText: generateSummaryPlainText(state.currentMeal),
+              items: state.currentMeal.map(i => ({
+                name: i.name,
+                mode: i.mode,
+                count: i.count,
+                grams: getItemGrams(i),
+                kcal: getItemKcal(i),
+                samplePieces: i.samplePieces,
+                sampleGrams: i.sampleGrams,
+                avgGramsPerPiece: i.avgGramsPerPiece,
+                stepGrams: i.stepGrams,
+                kcalPer100g: i.kcalPer100g,
+                handfulGrams: i.handfulGrams
+              }))
+            });
+          }
+
+          state.currentMeal = [];
+          state.undoStack = [];
+          vibrate([20, 40, 20]);
+          saveState();
+          renderAll();
+          switchTab('view-setup');
+          showToast(hasCounts ? 'Meal saved to History & cleared' : 'Started new empty meal');
+        });
+
+        // Two-tap inline Clear History button (no browser confirm pop-up)
+        const clearHistBtn = document.getElementById('clearHistoryBtn');
+        clearHistBtn.addEventListener('click', () => {
+          if (state.isLocked) {
+            showToast('Unlock screen first');
+            return;
+          }
+          if (state.history.length === 0) {
+            showToast('History is already empty');
+            return;
+          }
+          if (!state.confirmClearHistoryPending) {
+            state.confirmClearHistoryPending = true;
+            vibrate(15);
+            clearHistBtn.innerHTML = '<span>⚠ Tap Again to Confirm Clear History</span>';
+            setTimeout(() => {
+              state.confirmClearHistoryPending = false;
+              clearHistBtn.innerHTML = '<span>✕ Clear History</span>';
+            }, 3000);
+          } else {
+            state.history = [];
+            state.confirmClearHistoryPending = false;
+            clearHistBtn.innerHTML = '<span>✕ Clear History</span>';
+            vibrate([20, 30, 20]);
+            saveState();
+            renderHistoryView();
+            showToast('Cleared meal history');
+          }
+        });
+      }
+
+      // --- Boot ---
+      loadState();
+      initEvents();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
